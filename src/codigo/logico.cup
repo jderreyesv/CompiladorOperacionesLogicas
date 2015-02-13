@@ -1,0 +1,93 @@
+/* ----------------------Seccion de Declaraciones Preliminares--------------------*/
+package codigo;
+/* Importa la clase java_cup.runtime.*  */
+import java_cup.runtime.*;
+import tree.*;
+
+/* Codigo del Parser para cambiar la manera en que el parser reporta errores (incluido
+   el numero de linea y columna del error). */
+parser code {:
+
+ /* Cambia el metodo report_error para que muestre la linea y la columna
+ 	donde ocurre el error al momento de ingresar datos asi como tambien el
+ 	mensaje que se quiere mostrar con String 'message'. */
+    
+    public void report_error(String message, Object info) {
+   
+        /* Crea un StringBuffer llamado 'm' con la cadena 'Error' en el mismo. */
+        StringBuffer m = new StringBuffer("Error");
+   
+        /* Comprueba si la informacion pasada al metodo es del mismo tipo 
+           que java_cup.runtime.Symbol. */
+        if (info instanceof java_cup.runtime.Symbol) {
+            /* Declara un objeto java_cup.runtime.Symbol 's' con la
+               informacion de el object info que esta siendo accesada
+               as a java_cup.runtime.Symbol object. */
+            java_cup.runtime.Symbol s = ((java_cup.runtime.Symbol) info);
+   
+            /* Comprueba si el numero de linea en la entrada es mayor o
+               igua a 0. */
+            if (s.left >= 0) {                
+                /* Agrega al final del StringBuffer el mensaje de error
+                   y el numero de linea del error en la entrada. */
+                m.append(" in line "+(s.left+1));   
+                /* Comprueba si el numero de columan en la entrada es mayor
+                   o igual a 0 */
+                if (s.right >= 0)                    
+                    /* Agrega al final del StringBuffer el mensaje de error 
+                       y el numero de columna del error en la entrada. */
+                    m.append(", column "+(s.right+1));
+            }
+           	/*Agrega al final del StringBuffer el mensaje de error creado en
+           	este metodo es decir el mensaje que fue pasado como parametro en el metodo. */
+            m.append(" : "+message);
+            
+            /* Imprime el contenido del StringBuffer 'm', que contiene un mensaje de error. */
+			System.err.println(m);
+        }
+	}
+	
+	/* Cambia el metodo report_fatal_error y cuando este reporta un error fatal
+       muestra el numero de linea y columna donde ocurrio el error fatal
+       al momento de la entrada de datos asi como tambien la razon por la cual
+       el error fatal fue pasada en el metodo en el objeto 'message' entonces puede salir.*/
+    public void report_fatal_error(String message, Object info) {
+       	report_error(message, info);
+		//System.exit(1);
+
+    }
+ :};
+ 
+/* ------------Seccion de Declaracion de Terminales y No Terminales----------- */
+/* Terminales (tokens retornados por el scanner).  */
+terminal            AND, OR, NOT, ASSIGN;
+terminal            LPAREN, RPAREN;
+terminal Integer    NUMBER;
+terminal String     IDENT;
+
+/* No terminales usados en la seccion de gramatica.  */
+non terminal Tree expr;
+
+/* -------------Precedencia y Asociacion de la seccion de Terminales----------- */
+precedence left AND, OR;
+precedence left NOT;
+precedence left ASSIGN;
+
+/* ----------------------------Seccion de Gramatica-------------------- */
+
+/* La gramatica para el parser.*/
+expr          ::= expr:e1 AND expr:e2 
+                    {: RESULT = new And(e1, e2); :}
+                | expr:e1 OR expr:e2
+                    {: RESULT = new Or(e1, e2); :}
+                | NOT expr:e1 
+                    {: RESULT = new Not(e1); :}
+                | LPAREN expr:e RPAREN
+                    {: RESULT = e; :}
+                | IDENT:s ASSIGN expr:e
+                    {: RESULT = new Assignment(s, e); :}
+                | IDENT:s
+                    {: RESULT = new Identifier(s); :}
+                | NUMBER:n
+                    {: RESULT = new Booleano(n); :}
+                ;
